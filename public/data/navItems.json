@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Listagem",
+    "path": "/"
+  },
+  {
+    "name": "Histórico",
+    "path": "/historico"
+  },
+  {
+    "name": "Novo Item",
+    "path": "/novoItem",
+    "adminOnly": true
+  },
+  {
+    "name": "Usuários Cadastrados",
+    "path": "/admin/usuarios",
+    "adminOnly": true
+  }
+]
