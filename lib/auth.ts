@@ -41,6 +41,7 @@ export const authOptions: AuthOptions = {
           name: user.name,
           image: user.image,
           role: user.role,
+          localizacao: user.localizacao ?? null,
         };
       },
     }),
@@ -56,7 +57,6 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 
   callbacks: {
-    // Registra novos usuários do Google no MongoDB
     async signIn({ user, account }) {
       if (account?.provider === "google" && user.email) {
         await dbConnect();
@@ -67,7 +67,7 @@ export const authOptions: AuthOptions = {
             name: user.name ?? "Usuário",
             email: user.email.toLowerCase(),
             image: user.image ?? undefined,
-            role: "viewer",
+            role: "aprovacao",
           });
         } else if (!existing.image && user.image) {
           existing.image = user.image;
@@ -80,17 +80,17 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user, account }) {
       if (user) {
         if (account?.provider === "google") {
-          // Busca o usuário recém-criado/existente no banco
           await dbConnect();
           const dbUser = await User.findOne({ email: user.email!.toLowerCase() });
           if (dbUser) {
             token.id = dbUser._id.toString();
             token.role = dbUser.role;
+            token.localizacao = dbUser.localizacao ?? null;
           }
         } else {
-          // Fluxo de e-mail e senha
           token.role = (user as any).role || "viewer";
           token.id = user.id;
+          token.localizacao = (user as any).localizacao ?? null;
         }
       }
       return token;
@@ -100,6 +100,7 @@ export const authOptions: AuthOptions = {
       if (session.user) {
         (session.user as any).role = token.role;
         (session.user as any).id = token.id;
+        (session.user as any).localizacao = token.localizacao ?? null;
       }
       return session;
     },

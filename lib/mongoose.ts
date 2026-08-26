@@ -1,10 +1,8 @@
-// lib/mongoose.ts
 import dns from "node:dns/promises";
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 import mongoose from "mongoose";
 
-// Cache global para evitar múltiplas conexões Mongoose (similar ao padrão do MongoClient)
 let cached = (global as any).mongoose;
 
 if (!cached) {

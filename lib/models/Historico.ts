@@ -1,31 +1,36 @@
-// lib/models/Historico.ts
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IHistorico extends Document {
-  acao: "Criação" | "Edição" | "Exclusão";
-  codigo: number; //[cite: 3]
-  placa: number; //[cite: 3]
-  descricao: string; //[cite: 3]
-  detalhes?: string | null; //[cite: 3]
-  createdAt: Date; //[cite: 3]
+  acao: "Criação" | "Edição" | "Arquivamento" | "Restauração" | "Exclusão Permanente";
+  codigo: number;
+  placa: number;
+  descricao: string;
+  detalhes?: string | null;
+  valor?: number | null;
+  localizacao?: string | null;
+  usuario?: string | null;
+  createdAt: Date;
 }
 
 const HistoricoSchema: Schema = new Schema(
   {
     acao: {
-      type: String, //[cite: 3]
-      required: true, //[cite: 3]
-      enum: ["Criação", "Edição", "Exclusão"], //[cite: 3]
+      type: String,
+      required: true,
+      enum: ["Criação", "Edição", "Arquivamento", "Restauração", "Exclusão Permanente"],
     },
-    codigo: { type: Number, required: true }, //[cite: 3]
-    placa: { type: Number, required: true }, //[cite: 3]
-    descricao: { type: String, required: true }, //[cite: 3]
-    detalhes: { type: String, default: null }, //[cite: 3]
+    codigo: { type: Number, required: true },
+    placa: { type: Number, required: true },
+    descricao: { type: String, required: true },
+    valor: { type: Number, default: null },
+    localizacao: { type: String, required: false },
+    detalhes: { type: String, default: null },
+    usuario: { type: String, default: "Sistema" },
   },
-  { timestamps: true } //[cite: 3]
+  { timestamps: true }
 );
 
 export const Historico: Model<IHistorico> =
-  mongoose.models.Historico || mongoose.model<IHistorico>("Historico", HistoricoSchema); //[cite: 3]
+  mongoose.models.Historico || mongoose.model<IHistorico>("Historico", HistoricoSchema);
 
-export default Historico; //[cite: 3]
+export default Historico;

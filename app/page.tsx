@@ -11,10 +11,10 @@ export default function ListaPage() {
       <div className="max-w-7xl mx-auto">
         <header className="mb-10">
           <h1 className="text-3xl font-black text-gray-800 tracking-tight">
-            Inventário de Produtos
+            PATRIMONIO GERAL
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Itens cadastrados no banco de dados — filtre por estado para localizar ativos.
+            Itens cadastrados no inventário.
           </p>
         </header>
 

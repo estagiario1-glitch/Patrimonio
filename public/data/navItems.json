@@ -1,11 +1,196 @@
 [
   {
+    "name": "Localizações",
+    "path": "/",
+    "dropdown": [
+      {
+        "name": "Hall Superior",
+        "dropdown": [
+          {
+            "name": "Sala 1",
+            "path": "/salas/sala-1"
+          },
+          {
+            "name": "Sala 2",
+            "path": "/salas/sala-2"
+          },
+          {
+            "name": "Sala 3",
+            "path": "/salas/sala-3"
+          },
+          {
+            "name": "Sala 4",
+            "path": "/salas/sala-4"
+          },
+          {
+            "name": "Sala 5",
+            "path": "/salas/sala-5"
+          },
+          {
+            "name": "Sala 6",
+            "path": "/salas/sala-6"
+          },
+          {
+            "name": "Sala 7",
+            "path": "/salas/sala-7"
+          },
+          {
+            "name": "Sala 8",
+            "path": "/salas/sala-8"
+          },
+          {
+            "name": "Sala 10",
+            "path": "/salas/sala-10"
+          },
+          {
+            "name": "Sala 11",
+            "path": "/salas/sala-11"
+          },
+          {
+            "name": "Sala 12",
+            "path": "/salas/sala-12"
+          },
+          {
+            "name": "Sala 13",
+            "path": "/salas/sala-13"
+          },
+          {
+            "name": "Sala 14",
+            "path": "/salas/sala-14"
+          },
+          {
+            "name": "Sala 15",
+            "path": "/salas/sala-15"
+          },
+          {
+            "name": "Sala 16",
+            "path": "/salas/sala-16"
+          },
+          {
+            "name": "Sala 17",
+            "path": "/salas/sala-17"
+          },
+          {
+            "name": "Sala 18",
+            "path": "/salas/sala-18"
+          },
+          {
+            "name": "Sala 37",
+            "path": "/salas/sala-37"
+          },
+          {
+            "name": "Sala 38",
+            "path": "/salas/sala-38"
+          },
+          {
+            "name": "Sala 39",
+            "path": "/salas/sala-39"
+          }
+          
+        ]
+      },
+      {
+        "name": "Hall Inferior",
+        "dropdown": [
+          {
+            "name": "Sala 19",
+            "path": "/salas/sala-19"
+          },
+          {
+            "name": "Sala 20",
+            "path": "/salas/sala-20"
+          },
+          {
+            "name": "Sala 21",
+            "path": "/salas/sala-21"
+          },
+          {
+            "name": "Sala 22",
+            "path": "/salas/sala-22"
+          },
+          {
+            "name": "Sala 23",
+            "path": "/salas/sala-23"
+          },
+          {
+            "name": "Sala 24",
+            "path": "/salas/sala-24"
+          },
+          {
+            "name": "Sala 25",
+            "path": "/salas/sala-25"
+          },
+          {
+            "name": "Sala 26",
+            "path": "/salas/sala-26"
+          },
+          {
+            "name": "Sala 27",
+            "path": "/salas/sala-27"
+          },
+          {
+            "name": "Sala 28",
+            "path": "/salas/sala-28"
+          },
+          {
+            "name": "Sala 29",
+            "path": "/salas/sala-29"
+          },
+          {
+            "name": "Sala 30",
+            "path": "/salas/sala-30"
+          },
+          {
+            "name": "Sala 31",
+            "path": "/salas/sala-31"
+          },
+          {
+            "name": "Sala 32",
+            "path": "/salas/sala-32"
+          },
+          {
+            "name": "Sala 33",
+            "path": "/salas/sala-33"
+          },
+          {
+            "name": "Sala 34",
+            "path": "/salas/sala-34"
+          },
+          {
+            "name": "Sala 35",
+            "path": "/salas/sala-35"
+          }
+        ]
+      },
+      {
+        "name": "Coworking",
+        "path": "/salas/coworking"
+      },
+      {
+        "name": "Sala de Reunião (G)",
+        "path": "/salas/sala-de-reuniao-g"
+      },
+      {
+        "name": "Sala de Reunião (P)",
+        "path": "/salas/sala-de-reuniao-p"
+      },
+      {
+        "name": "NTI",
+        "path": "/salas/nti"
+      }
+    ]
+  },
+  {
     "name": "Listagem",
     "path": "/"
   },
   {
     "name": "Histórico",
     "path": "/historico"
+  },
+  {
+    "name": "Arquivados",
+    "path": "/arquivado"
   },
   {
     "name": "Novo Item",

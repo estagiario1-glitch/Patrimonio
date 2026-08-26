@@ -1,17 +1,19 @@
-// lib/models/Produto.ts
 import mongoose, { Schema, Document, Model } from "mongoose";
+import { SALAS } from "../Salas";
 
 export interface IProduto extends Document {
   placa: number;
   codigo: number;
   descricao: string;
   notaFiscal: number;
-  estado: "Excelente" | "Ruim" | "Novo";
+  estado: "Não Informado" | "Excelente" | "Ruim" | "Novo";
   valor: number;
   localizacao: string;
   obs?: string | null;
   status_comparacao?: string | null;
 }
+
+
 
 const ProdutoSchema: Schema = new Schema(
   {
@@ -19,9 +21,9 @@ const ProdutoSchema: Schema = new Schema(
     codigo:            { type: Number, required: true },
     descricao:         { type: String, required: true },
     notaFiscal:        { type: Number, default: null },
-    estado:            { type: String, default: "Não Informado", enum: ["Novo", "Excelente", "Ruim"] },
+    estado:            { type: String, default: "Não Informado", enum: ["Não Informado", "Novo", "Excelente", "Ruim"] },
     valor:             { type: Number, default: null },
-    localizacao:       { type: String, default: null },
+    localizacao:       { type: String, default: "Não Informado", enum: SALAS },
     obs:               { type: String, default: null },
   },
   { timestamps: true }

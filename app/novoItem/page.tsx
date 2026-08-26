@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Package, ArrowLeft, Save, AlertTriangle, CheckCircle } from "lucide-react";
+import {SALAS} from "../../lib/Salas";
 
-type Estado = "Novo" | "Excelente" | "Ruim"
+type Estado = "Novo" | "Excelente" | "Ruim" | "Não Informado";
 
 interface ProdutoFormData {
   placa: string;
@@ -43,6 +44,12 @@ export default function NovoItemPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.localizacao) {
+      setError("Por favor, selecione uma localização válida.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(false);
@@ -225,23 +232,30 @@ export default function NovoItemPage() {
                 <option value="Novo">Novo</option>
                 <option value="Excelente">Excelente</option>
                 <option value="Ruim">Ruim</option>
+                <option value="Não Informado">Não Informado</option>
               </select>
             </div>
-
 
             <div>
               <label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">
                 Localização *
               </label>
-              <input
-                type="text"
+              <select
                 name="localizacao"
                 required
                 value={formData.localizacao}
                 onChange={handleChange}
-                placeholder="Ex: Sala 204 - Bloco B"
                 className="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-cello-800/30 focus:border-cello-800"
-              />
+              >
+                <option value="" disabled>
+                  Selecione uma localização...
+                </option>
+                {SALAS.map((sala) => (
+                  <option key={sala} value={sala}>
+                    {sala}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="sm:col-span-2">

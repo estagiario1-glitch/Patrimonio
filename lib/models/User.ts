@@ -1,18 +1,18 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-export type UserRole = "viewer" | "admin";
+export type UserRole = "viewer" | "admin" | "sala" | "aprovacao";
 
 export interface IUser extends Document {
   name?: string;
   email: string;
-  password?: string;       // undefined para usuários OAuth
+  password?: string;       
   role: UserRole;
-  image?: string;          // avatar vindo do Google
+  localizacao?: string;    
+  image?: string;        
   createdAt: Date;
   updatedAt: Date;
 }
 
-// @ts-ignore
 const UserSchema: Schema = new Schema(
   {
     name: { type: String },
@@ -25,13 +25,15 @@ const UserSchema: Schema = new Schema(
     },
     password: {
       type: String,
-      // Opcional: usuários OAuth não têm senha local
     },
     role: {
       type: String,
       required: true,
-      enum: ["viewer", "admin"],
-      default: "viewer",
+      enum: ["viewer", "admin", "sala", "aprovacao"],
+      default: "aprovacao",
+    },
+    localizacao: {
+      type: String,
     },
     image: { type: String },
   },

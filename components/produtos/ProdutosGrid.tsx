@@ -3,16 +3,16 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { createPortal } from 'react-dom'
+import { SALAS } from '@/lib/Salas'
 import {
   Package, FileText, Tag, MapPin, X, UserCheck,
-  SlidersHorizontal, AlertTriangle, CheckCircle,
-  XCircle, Clock, Banknote, Search, ChevronDown,
-  Pencil, Trash2, ArrowUpDown, ArrowUp, ArrowDown,
+  SlidersHorizontal, AlertTriangle,
+  Clock, Banknote, Search, ChevronDown,
+  Pencil, Clipboard, ArrowUpDown, ArrowUp, ArrowDown,
   Plus,
-  type LucideIcon,
 } from 'lucide-react'
 
-type Estado = 'Novo' | 'Excelente' | 'Ruim' 
+type Estado = 'Novo' | 'Excelente' | 'Ruim' | 'Não Informado'
 type FilterEstado = 'Todos' | Estado
 type SortBy = 'placa' | 'codigo' | 'valor'
 type SortDir = 'asc' | 'desc'
@@ -27,6 +27,10 @@ interface Produto {
   valor: number
   localizacao: string
   obs?: string | null
+}
+
+interface Props {
+  localizacao?: string
 }
 
 const estadoStyles: Record<
@@ -59,6 +63,15 @@ const estadoStyles: Record<
     pillBg: 'bg-rose-100',
     pillText: 'text-rose-700',
     shadowHover: 'hover:shadow-rose-100/60',
+  },
+  'Não Informado': {
+    bg: 'from-gray-50/70 to-white',
+    borderIdle: 'border-gray-100',
+    borderHover: 'hover:border-gray-400',
+    text: 'text-gray-700',
+    pillBg: 'bg-gray-100',
+    pillText: 'text-gray-700',
+    shadowHover: 'hover:shadow-gray-100/60',
   }
 }
 
@@ -66,34 +79,45 @@ function formatValor(valor: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)
 }
 
-const ESTADO_OPTIONS: FilterEstado[] = [
-  'Todos', 'Novo', 'Excelente', 'Ruim'
-]
+const ESTADO_OPTIONS: FilterEstado[] = ['Todos', 'Novo', 'Excelente', 'Ruim', 'Não Informado']
+const SORT_LABELS: Record<SortBy, string> = { placa: 'Placa', codigo: 'Código', valor: 'Preço' }
 
-export default function ProdutosGrid() {
+export default function ProdutosGrid({ localizacao }: Props) {
   const { data: session } = useSession()
-  const isAdmin = (session?.user as any)?.role === 'admin'
+  const role = (session?.user as any)?.role as string | undefined
+  const isAdmin = role === 'admin'
+  const canEdit = isAdmin
 
-  const [produtos, setProdutos]           = useState<Produto[]>([])
-  const [loading, setLoading]             = useState(true)
-  const [error, setError]                 = useState<string | null>(null)
-  const [activeFilter, setActiveFilter]   = useState<FilterEstado>('Todos')
-  const [dropdownOpen, setDropdownOpen]   = useState(false)
-  const [search, setSearch]               = useState('')
-  const [selected, setSelected]           = useState<Produto | null>(null)
-  const [editingProduto, setEditingProduto] = useState<Produto | null>(null)
-  const [actionLoading, setActionLoading] = useState(false)
-  const [sortBy, setSortBy]               = useState<SortBy>('placa')
-  const [sortDir, setSortDir]             = useState<SortDir>('asc')
+  const [produtos, setProdutos]               = useState<Produto[]>([])
+  const [loading, setLoading]                 = useState(true)
+  const [error, setError]                     = useState<string | null>(null)
+  const [activeFilter, setActiveFilter]       = useState<FilterEstado>('Todos')
+  const [search, setSearch]                   = useState('')
+  const [selected, setSelected]               = useState<Produto | null>(null)
+  const [editingProduto, setEditingProduto]   = useState<Produto | null>(null)
+  const [actionLoading, setActionLoading]     = useState(false)
+  const [sortBy, setSortBy]                   = useState<SortBy>('placa')
+  const [sortDir, setSortDir]                 = useState<SortDir>('asc')
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
+  const [arquivandoId, setArquivandoId]         = useState<string | null>(null)
+  const [motivoArquivamento, setMotivoArquivamento] = useState('')
 
   useEffect(() => {
-    fetch('/api/produtos')
-      .then((res) => { if (!res.ok) throw new Error(`Erro ${res.status}`); return res.json() })
-      .then((data: Produto[]) => setProdutos([...data].sort((a, b) => a.codigo - b.codigo)))
+    const url = localizacao
+      ? `/api/produtos?localizacao=${encodeURIComponent(localizacao)}`
+      : '/api/produtos'
+
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error(`Erro ${res.status}`)
+        return res.json()
+      })
+      .then((data: Produto[]) =>
+        setProdutos([...data].sort((a, b) => a.codigo - b.codigo))
+      )
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [localizacao])
 
   useEffect(() => {
     if (!selected && !editingProduto) return
@@ -110,34 +134,41 @@ export default function ProdutosGrid() {
   }, [selected, editingProduto])
 
   useEffect(() => {
-    if (!dropdownOpen) return
-    const handler = () => setDropdownOpen(false)
-    window.addEventListener('click', handler)
-    return () => window.removeEventListener('click', handler)
-  }, [dropdownOpen])
-
-  useEffect(() => {
     if (!sortDropdownOpen) return
     const handler = () => setSortDropdownOpen(false)
     window.addEventListener('click', handler)
     return () => window.removeEventListener('click', handler)
   }, [sortDropdownOpen])
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation()
-    if (!confirm('Tem certeza que deseja excluir este produto do banco de dados?')) return
-    try {
-      setActionLoading(true)
-      const res = await fetch(`/api/produtos/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Falha ao excluir o item.')
-      setProdutos((prev) => prev.filter((p) => p._id !== id))
-      if (selected?._id === id) setSelected(null)
-    } catch (err: any) {
-      alert(err.message || 'Erro ao excluir produto.')
-    } finally {
-      setActionLoading(false)
-    }
+const handleArchiveOpen = (e: React.MouseEvent, id: string) => {
+  e.stopPropagation()
+  setArquivandoId(id)
+  setMotivoArquivamento('')
+}
+
+const handleArchiveConfirm = async () => {
+  if (!arquivandoId) return
+  if (!motivoArquivamento.trim()) {
+    alert('Por favor, informe o motivo do arquivamento.')
+    return
   }
+  try {
+    setActionLoading(true)
+    const res = await fetch(`/api/produtos/${arquivandoId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ motivo: motivoArquivamento.trim() }),
+    })
+    if (!res.ok) throw new Error('Falha ao arquivar o item.')
+    setProdutos((prev) => prev.filter((p) => p._id !== arquivandoId))
+    if (selected?._id === arquivandoId) setSelected(null)
+    setArquivandoId(null)
+  } catch (err: any) {
+    alert(err.message || 'Erro ao arquivar produto.')
+  } finally {
+    setActionLoading(false)
+  }
+}
 
   const handleEditOpen = (e: React.MouseEvent, produto: Produto) => {
     e.stopPropagation()
@@ -175,8 +206,6 @@ export default function ProdutosGrid() {
     e.stopPropagation()
     setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
   }
-
-  const SORT_LABELS: Record<SortBy, string> = { placa: 'Placa', codigo: 'Código', valor: 'Preço' }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -221,7 +250,7 @@ export default function ProdutosGrid() {
 
   return (
     <>
-      {/* Linha 1: busca + ordenação + botão novo item (só admin) */}
+      {/* Busca, Ordenação e Botão novo item */}
       <div className="flex items-center gap-3 mb-3">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -235,7 +264,7 @@ export default function ProdutosGrid() {
         </div>
 
         <div className="flex items-center gap-1 flex-shrink-0">
-          {/* Dropdown: critério de ordenação */}
+          {/* Ordenação */}
           <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setSortDropdownOpen((o) => !o)}
@@ -245,7 +274,10 @@ export default function ProdutosGrid() {
                 <ArrowUpDown size={14} className="text-gray-400" />
                 {SORT_LABELS[sortBy]}
               </span>
-              <ChevronDown size={14} className={`text-gray-400 transition-transform ${sortDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                size={14}
+                className={`text-gray-400 transition-transform ${sortDropdownOpen ? 'rotate-180' : ''}`}
+              />
             </button>
 
             {sortDropdownOpen && (
@@ -255,7 +287,9 @@ export default function ProdutosGrid() {
                     key={key}
                     onClick={() => handleSortByChange(key)}
                     className={`w-full text-left px-4 py-2 text-sm transition ${
-                      sortBy === key ? 'bg-cello-800 text-white font-semibold' : 'text-gray-700 hover:bg-gray-50'
+                      sortBy === key
+                        ? 'bg-cello-800 text-white font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
                     {label}
@@ -281,7 +315,6 @@ export default function ProdutosGrid() {
             </span>
           </button>
 
-          {/* Botão "Novo Item" — visível apenas para admin */}
           {isAdmin && (
             <a
               href="/novoItem"
@@ -294,7 +327,7 @@ export default function ProdutosGrid() {
         </div>
       </div>
 
-      {/* Linha 2: filtros de estado */}
+      {/* Filtros */}
       <div className="flex flex-wrap items-center gap-2 mb-6">
         <SlidersHorizontal size={13} className="text-gray-400 flex-shrink-0" />
         {ESTADO_OPTIONS.map((op) => (
@@ -312,10 +345,14 @@ export default function ProdutosGrid() {
         ))}
       </div>
 
+      {/* Contagem */}
       <p className="text-xs text-gray-400 mb-4">
-        {filtered.length} item{filtered.length !== 1 ? 'ns' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
+        {filtered.length} {filtered.length !== 1 ? 'itens' : 'item'} encontrado{filtered.length !== 1 ? 's' : ''}
+        {localizacao ? ` em "${localizacao}"` : ''}
+        {activeFilter !== 'Todos' ? ` · estado: ${activeFilter}` : ''}
       </p>
 
+      {/* Lista */}
       {filtered.length === 0 ? (
         <p className="text-center text-gray-400 py-16 text-sm">Nenhum produto encontrado.</p>
       ) : (
@@ -323,69 +360,70 @@ export default function ProdutosGrid() {
           {filtered.map((produto) => {
             const s = estadoStyles[produto.estado]
             return (
-              <div key={produto._id}>
-                <article
-                  onClick={() => setSelected(produto)}
-                  className={`
-                    flex items-center gap-4 px-5 py-4
-                    bg-gradient-to-r ${s.bg}
-                    border ${s.borderIdle} ${s.borderHover}
-                    rounded-2xl shadow-sm hover:shadow-md ${s.shadowHover}
-                    transition-all duration-200 hover:-translate-y-0.5
-                    cursor-pointer
-                  `}
-                >
-                  <div className="p-2.5 rounded-xl bg-cello-800 flex-shrink-0">
-                    <Package size={20} className="text-cyan-300" />
-                  </div>
+              <article
+                key={produto._id}
+                onClick={() => setSelected(produto)}
+                className={`
+                  flex items-center gap-4 px-5 py-4
+                  bg-gradient-to-r ${s.bg}
+                  border ${s.borderIdle} ${s.borderHover}
+                  rounded-2xl shadow-sm hover:shadow-md ${s.shadowHover}
+                  transition-all duration-200 hover:-translate-y-0.5
+                  cursor-pointer
+                `}
+              >
+                <div className="p-2.5 rounded-xl bg-cello-800 flex-shrink-0">
+                  <Package size={20} className="text-cyan-300" />
+                </div>
 
-                  <div className="flex-1 min-w-0">
-                    <span className={`block text-[10px] font-bold uppercase tracking-widest ${s.text}`}>
-                      #{produto.codigo} · Placa {produto.placa}
+                <div className="flex-1 min-w-0">
+                  <span className={`block text-[10px] font-bold uppercase tracking-widest ${s.text}`}>
+                    #{produto.codigo} · Placa {produto.placa}
+                  </span>
+                  <h3 className="mt-0.5 text-gray-800 font-bold text-sm leading-snug truncate">
+                    {produto.descricao}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.pillBg} ${s.pillText}`}>
+                      {produto.estado}
                     </span>
-                    <h3 className="mt-0.5 text-gray-800 font-bold text-sm leading-snug truncate">
-                      {produto.descricao}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.pillBg} ${s.pillText}`}>
-                        {produto.estado}
-                      </span>
+                    {(!localizacao || isAdmin) && (
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 flex items-center gap-1">
                         <MapPin size={9} />
                         {produto.localizacao}
                       </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4 flex-shrink-0">
-                    <span className="text-base font-black text-green-700">
-                      {formatValor(produto.valor)}
-                    </span>
-
-                    {/* Botões de edição/exclusão — visíveis apenas para admin */}
-                    {isAdmin && (
-                      <div className="flex items-center gap-1.5 border-l pl-3 border-gray-200">
-                        <button
-                          onClick={(e) => handleEditOpen(e, produto)}
-                          disabled={actionLoading}
-                          title="Editar produto"
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => handleDelete(e, produto._id)}
-                          disabled={actionLoading}
-                          title="Excluir produto"
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-rose-600 hover:bg-rose-50 transition"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
                     )}
                   </div>
-                </article>
-              </div>
+                </div>
+
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  <span className="text-base font-black text-green-700">
+                    {formatValor(produto.valor)}
+                  </span>
+
+                  {/* Botões de edição/exclusão */}
+                  {canEdit && (
+                    <div className="flex items-center gap-1.5 border-l pl-3 border-gray-200">
+                      <button
+                        onClick={(e) => handleEditOpen(e, produto)}
+                        disabled={actionLoading}
+                        title="Editar produto"
+                        className="p-1.5 rounded-lg text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 transition"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => handleArchiveOpen(e, produto._id)}
+                        disabled={actionLoading}
+                        title="Excluir produto"
+                        className="p-1.5 rounded-lg text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition"
+                      >
+                        <Clipboard size={16} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </article>
             )
           })}
         </div>
@@ -409,7 +447,10 @@ export default function ProdutosGrid() {
                   className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className={`sticky top-0 z-10 flex items-start gap-4 p-6 pb-4 bg-gradient-to-br ${s.bg} border-b ${s.borderIdle} rounded-t-2xl`}>
+                  {/* Header */}
+                  <div
+                    className={`sticky top-0 z-10 flex items-start gap-4 p-6 pb-4 bg-gradient-to-br ${s.bg} border-b ${s.borderIdle} rounded-t-2xl`}
+                  >
                     <div className="p-3 rounded-xl bg-cello-800 flex-shrink-0">
                       <Package size={24} className="text-cyan-300" />
                     </div>
@@ -417,7 +458,9 @@ export default function ProdutosGrid() {
                       <span className={`block text-[10px] font-bold uppercase tracking-widest ${s.text}`}>
                         Código #{p.codigo} · Placa {p.placa}
                       </span>
-                      <h2 className="mt-0.5 text-gray-800 font-black text-xl leading-snug">{p.descricao}</h2>
+                      <h2 className="mt-0.5 text-gray-800 font-black text-xl leading-snug">
+                        {p.descricao}
+                      </h2>
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${s.pillBg} ${s.pillText}`}>
                           {p.estado}
@@ -433,6 +476,7 @@ export default function ProdutosGrid() {
                     </button>
                   </div>
 
+                  {/* Corpo */}
                   <div className="p-6 flex flex-col gap-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className={`flex items-start gap-3 p-3.5 rounded-xl ${s.pillBg}`}>
@@ -468,7 +512,9 @@ export default function ProdutosGrid() {
                       <UserCheck size={16} className={`mt-0.5 flex-shrink-0 ${s.pillText}`} />
                       <div>
                         <span className={`text-[10px] font-bold uppercase tracking-wide ${s.pillText}`}>Observação</span>
-                        <p className={`mt-0.5 text-sm ${s.pillText}`}>{p.obs ?? 'Nenhuma observação registrada.'}</p>
+                        <p className={`mt-0.5 text-sm ${s.pillText}`}>
+                          {p.obs ?? 'Nenhuma observação registrada.'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -479,8 +525,7 @@ export default function ProdutosGrid() {
           document.body
         )}
 
-      {/* Modal Edição — apenas admin consegue abrir (botão está oculto para viewer) */}
-      {editingProduto && isAdmin &&
+      {editingProduto && canEdit &&
         createPortal(
           <div
             className="fixed inset-0 z-[50] flex items-center justify-center p-4 backdrop-blur-md bg-black/40"
@@ -492,7 +537,10 @@ export default function ProdutosGrid() {
             >
               <div className="flex justify-between items-center mb-4 pb-2 border-b">
                 <h3 className="text-lg font-bold text-gray-800">Editar Produto</h3>
-                <button onClick={() => setEditingProduto(null)} className="text-gray-400 hover:text-gray-600 p-1">
+                <button
+                  onClick={() => setEditingProduto(null)}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
                   <X size={18} />
                 </button>
               </div>
@@ -539,7 +587,9 @@ export default function ProdutosGrid() {
                       type="number"
                       step="0.01"
                       value={editingProduto.valor}
-                      onChange={(e) => setEditingProduto({ ...editingProduto, valor: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) =>
+                        setEditingProduto({ ...editingProduto, valor: parseFloat(e.target.value) || 0 })
+                      }
                       className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-cello-800/30 focus:outline-none"
                       required
                     />
@@ -549,7 +599,9 @@ export default function ProdutosGrid() {
                     <input
                       type="number"
                       value={editingProduto.notaFiscal}
-                      onChange={(e) => setEditingProduto({ ...editingProduto, notaFiscal: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setEditingProduto({ ...editingProduto, notaFiscal: Number(e.target.value) })
+                      }
                       className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-cello-800/30 focus:outline-none"
                       required
                     />
@@ -560,34 +612,46 @@ export default function ProdutosGrid() {
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Estado</label>
                   <select
                     value={editingProduto.estado}
-                    onChange={(e) => setEditingProduto({ ...editingProduto, estado: e.target.value as Estado })}
+                    onChange={(e) =>
+                      setEditingProduto({ ...editingProduto, estado: e.target.value as Estado })
+                    }
                     className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-cello-800/30 focus:outline-none"
                   >
                     <option value="Novo">Novo</option>
                     <option value="Excelente">Excelente</option>
                     <option value="Ruim">Ruim</option>
-                    <option value="Quebrado com Concerto">Quebrado com Concerto</option>
-                    <option value="Quebrado sem Concerto">Quebrado sem Concerto</option>
                     <option value="Não Informado">Não Informado</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Localização</label>
-                  <input
-                    type="text"
+                  <select
                     value={editingProduto.localizacao}
-                    onChange={(e) => setEditingProduto({ ...editingProduto, localizacao: e.target.value })}
-                    className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-cello-800/30 focus:outline-none"
+                    onChange={(e) =>
+                      setEditingProduto({ ...editingProduto, localizacao: e.target.value })
+                    }
+                    className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-cello-800/30 focus:outline-none bg-white"
                     required
-                  />
+                  >
+                    <option value="" disabled>
+                      Selecione uma sala...
+                    </option>
+                    {SALAS.map((sala) => (
+                      <option key={sala} value={sala}>
+                        {sala}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Observação</label>
                   <textarea
                     value={editingProduto.obs ?? ''}
-                    onChange={(e) => setEditingProduto({ ...editingProduto, obs: e.target.value || null })}
+                    onChange={(e) =>
+                      setEditingProduto({ ...editingProduto, obs: e.target.value || null })
+                    }
                     className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-cello-800/30 focus:outline-none"
                     rows={2}
                   />
@@ -614,6 +678,60 @@ export default function ProdutosGrid() {
           </div>,
           document.body
         )}
+        {arquivandoId && canEdit &&
+  createPortal(
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-md bg-black/40"
+      onClick={() => setArquivandoId(null)}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-4 pb-2 border-b">
+          <h3 className="text-lg font-bold text-gray-800">Arquivar Produto</h3>
+          <button
+            onClick={() => setArquivandoId(null)}
+            className="text-gray-400 hover:text-gray-600 p-1"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <p className="text-sm text-gray-600 mb-4">
+          O produto será movido para o arquivo. Informe o motivo abaixo.
+        </p>
+
+        <textarea
+          value={motivoArquivamento}
+          onChange={(e) => setMotivoArquivamento(e.target.value)}
+          placeholder="Descreva o motivo do arquivamento..."
+          className="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-cello-800/30 focus:outline-none resize-none"
+          rows={4}
+          autoFocus
+        />
+
+        <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+          <button
+            type="button"
+            onClick={() => setArquivandoId(null)}
+            className="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 transition"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={actionLoading || !motivoArquivamento.trim()}
+            onClick={handleArchiveConfirm}
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl transition disabled:opacity-50"
+          >
+            Confirmar Arquivamento
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  )}
     </>
   )
 }

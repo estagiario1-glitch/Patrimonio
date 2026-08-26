@@ -2,15 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { User as UserIcon, ShieldCheck, Eye, Loader2, Search } from "lucide-react";
+import { User as UserIcon, ShieldCheck, Eye, Loader2, Search, MapPin } from "lucide-react";
 
 interface IUserItem {
   _id: string;
   name?: string;
   email: string;
   image?: string;
-  role: "admin" | "viewer";
+  role: "admin" | "viewer" | "sala" | "aprovacao";
+  localizacao?: string;
 }
+
+const SALAS_OPTIONS = [
+  ...Array.from({ length: 35 }, (_, i) => `Sala ${i + 1}`),
+  "Sala 37",
+  "Sala 38",
+  "Coworking",
+  "NTI",
+  "Sala de Reunião (G)",
+  "Sala de Reunião (P)",
+];
 
 export default function AdminUsuariosPage() {
   const { data: session } = useSession();
@@ -37,21 +48,64 @@ export default function AdminUsuariosPage() {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: "admin" | "viewer") => {
+  const handleRoleChange = async (
+  userId: string, 
+  newRole: "admin" | "viewer" | "sala" | "aprovacao"
+) => {
+  setUpdatingId(userId);
+
+  const currentUser = users.find((u) => u._id === userId);
+  const localizacaoPayload = newRole === "sala" ? (currentUser?.localizacao || SALAS_OPTIONS[0]) : undefined;
+
+  try {
+    const res = await fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        userId, 
+        newRole,
+        ...(newRole === "sala" && { localizacao: localizacaoPayload }) 
+      }),
+    });
+
+    if (res.ok) {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === userId
+            ? {
+                ...u,
+                role: newRole,
+                localizacao: newRole === "sala" ? localizacaoPayload : undefined,
+              }
+            : u
+        )
+      );
+    } else {
+      const errorData = await res.json();
+      alert(errorData.error || "Não foi possível atualizar o cargo do usuário.");
+    }
+  } catch (err) {
+    alert("Erro na requisição.");
+  } finally {
+    setUpdatingId(null);
+  }
+};
+
+  const handleLocationChange = async (userId: string, newLocation: string) => {
     setUpdatingId(userId);
     try {
       const res = await fetch("/api/admin/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, newRole }),
+        body: JSON.stringify({ userId, localizacao: newLocation }),
       });
 
       if (res.ok) {
         setUsers((prev) =>
-          prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u))
+          prev.map((u) => (u._id === userId ? { ...u, localizacao: newLocation } : u))
         );
       } else {
-        alert("Não foi possível atualizar o cargo do usuário.");
+        alert("Não foi possível atualizar a localização do usuário.");
       }
     } catch (err) {
       alert("Erro na requisição.");
@@ -63,7 +117,8 @@ export default function AdminUsuariosPage() {
   const filteredUsers = users.filter(
     (u) =>
       u.name?.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
+      u.email.toLowerCase().includes(search.toLowerCase()) ||
+      (u.role === "sala" && u.localizacao?.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -80,7 +135,7 @@ export default function AdminUsuariosPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar por nome ou e-mail..."
+            placeholder="Buscar por nome, e-mail ou sala..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cello-800/20"
@@ -88,7 +143,7 @@ export default function AdminUsuariosPage() {
         </div>
       </div>
 
-      {/* Lista / Tabela */}
+      {/* Tabela */}
       {loading ? (
         <div className="flex items-center justify-center py-16 text-gray-500 gap-2">
           <Loader2 size={20} className="animate-spin text-cello-800" />
@@ -102,6 +157,7 @@ export default function AdminUsuariosPage() {
                 <tr>
                   <th className="px-6 py-4">Usuário</th>
                   <th className="px-6 py-4">E-mail</th>
+                  <th className="px-6 py-4">Localização</th>
                   <th className="px-6 py-4">Cargo Atual</th>
                   <th className="px-6 py-4 text-right">Ação</th>
                 </tr>
@@ -139,17 +195,51 @@ export default function AdminUsuariosPage() {
                       {/* E-mail */}
                       <td className="px-6 py-4 text-gray-500">{u.email}</td>
 
-                      {/* Cargo (Badge) */}
+                      {/* Localização (Condicionada à role "sala") */}
                       <td className="px-6 py-4">
+                        {u.role === "sala" ? (
+                          <div>
+                            <select
+                              name="localizacao"
+                              required
+                              value={u.localizacao || ""}
+                              onChange={(e) => handleLocationChange(u._id, e.target.value)}
+                              className="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-cello-800/30 focus:border-cello-800"
+                            >
+                              <option value="" disabled>
+                                Selecione uma localização...
+                              </option>
+                              {SALAS_OPTIONS.map((sala) => (
+                                <option key={sala} value={sala}>
+                                  {sala}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </td>
+
+                      {/* Cargo (Badge) */}
+                      <td className="px-4 py-4">
                         {u.role === "admin" ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
-                            <ShieldCheck size={14} /> Admin
+                            <ShieldCheck size={14} /> Administrador
+                          </span>
+                        ) : u.role === "sala" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                            <MapPin size={14} /> Sala
+                          </span>
+                        ) : u.role === "aprovacao" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            <Loader2 size={14} /> Em Aprovação
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200">
-                            <Eye size={14} /> Viewer
+                            <Eye size={14} /> Visualizador
                           </span>
-                        )}
+                        ) }
                       </td>
 
                       {/* Botão de Troca de Cargo */}
@@ -158,12 +248,14 @@ export default function AdminUsuariosPage() {
                           value={u.role}
                           disabled={updatingId === u._id || isCurrentLoggedUser}
                           onChange={(e) =>
-                            handleRoleChange(u._id, e.target.value as "admin" | "viewer")
+                            handleRoleChange(u._id, e.target.value as "admin" | "viewer" | "sala")
                           }
                           className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-cello-800 disabled:opacity-50 cursor-pointer"
                         >
-                          <option value="viewer">Viewer</option>
-                          <option value="admin">Admin</option>
+                          <option value="viewer">Visualizador</option>
+                          <option value="admin">Administrador</option>
+                          <option value="sala">Sala</option>
+                          <option value="aprovacao">Em aprovação</option>
                         </select>
                       </td>
                     </tr>

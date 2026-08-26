@@ -60,7 +60,7 @@ export default function CadastroPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-16 bg-gray-50">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
 
-        {/* Logo / título */}
+        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="p-3 rounded-xl bg-cello-800 mb-4">
             <Package size={28} className="text-cyan-300" />

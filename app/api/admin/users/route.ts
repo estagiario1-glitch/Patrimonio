@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongoose";
 import User from "@/lib/models/User";
 
-// 🔍 Buscar todos os usuários (Apenas Admin)
 export async function GET() {
   const session = await getServerSession(authOptions);
   const currentRole = (session?.user as any)?.role;
@@ -15,7 +14,7 @@ export async function GET() {
 
   try {
     await dbConnect();
-    const users = await User.find({}, "name email image role createdAt")
+    const users = await User.find({}, "name email image role localizacao createdAt")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -25,7 +24,6 @@ export async function GET() {
   }
 }
 
-// ✏️ Alterar o cargo de um usuário (Apenas Admin)
 export async function PATCH(request: Request) {
   const session = await getServerSession(authOptions);
   const currentRole = (session?.user as any)?.role;
@@ -35,26 +33,54 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const { userId, newRole } = await request.json();
+    const { userId, newRole, localizacao } = await request.json();
 
-    if (!["admin", "viewer"].includes(newRole)) {
-      return NextResponse.json({ error: "Cargo inválido." }, { status: 400 });
+    if (!userId) {
+      return NextResponse.json({ error: "ID do usuário é obrigatório." }, { status: 400 });
     }
 
     await dbConnect();
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { role: newRole },
-      { new: true }
-    ).select("name email image role");
-
-    if (!updatedUser) {
+    const user = await User.findById(userId);
+    if (!user) {
       return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
     }
 
-    return NextResponse.json(updatedUser);
+    const targetRole = newRole !== undefined ? newRole : user.role;
+    const targetLocation = localizacao !== undefined ? localizacao.trim() : (user.localizacao || "");
+
+    if (!["admin", "viewer", "sala", "aprovacao"].includes(targetRole)) {
+      return NextResponse.json({ error: "Cargo inválido." }, { status: 400 });
+    }
+
+    if (targetRole === "sala" && !targetLocation) {
+      return NextResponse.json(
+        { error: "Localização é obrigatória para o cargo Sala." },
+        { status: 400 }
+      );
+    }
+
+    user.role = targetRole;
+    if (targetRole === "sala") {
+      user.localizacao = targetLocation;
+    } else {
+      user.localizacao = undefined; 
+    }
+
+    await user.save();
+
+    return NextResponse.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      role: user.role,
+      localizacao: user.localizacao,
+    });
   } catch (error) {
-    return NextResponse.json({ error: "Erro ao atualizar o cargo do usuário." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao atualizar o usuário." },
+      { status: 500 }
+    );
   }
 }
