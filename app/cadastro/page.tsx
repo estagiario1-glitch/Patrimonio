@@ -67,7 +67,7 @@ export default function CadastroPage() {
           </div>
           <h1 className="text-2xl font-black text-gray-800">Criar conta</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Novos usuários entram como <span className="font-semibold">Viewer</span> — um Admin pode elevar seu acesso depois.
+            Novos cadastros possuem o estado de <span className="font-semibold">Em Aprovação</span> — um Admin pode elevar seu acesso depois.
           </p>
         </div>
 

@@ -29,7 +29,7 @@ steps:
       - '--build-arg'
       - 'CRON_SECRET=$$CRON_SECRET'
       - '-t'
-      - 'southamerica-east1-docker.pkg.dev/parquetec/cloud-run-source-deploy/smcti-website'
+      - 'southamerica-east1-docker.pkg.dev/parquetec/cloud-run-source-deploy/patrimonio-parquetecnologico'
       - '.'
     secretEnv:
       - MONGODB_URI
@@ -49,16 +49,16 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'southamerica-east1-docker.pkg.dev/parquetec/cloud-run-source-deploy/smcti-website'
+      - 'southamerica-east1-docker.pkg.dev/parquetec/cloud-run-source-deploy/patrimonio-parquetecnologico'
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
-      - 'smcti-website'
+      - 'patrimonio-parquetecnologico'
       - '--image'
-      - 'southamerica-east1-docker.pkg.dev/parquetec/cloud-run-source-deploy/smcti-website'
+      - 'southamerica-east1-docker.pkg.dev/parquetec/cloud-run-source-deploy/patrimonio-parquetecnologico'
       - '--region'
       - 'southamerica-east1'
 
@@ -67,9 +67,9 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'smcti-website'
+      - 'patrimonio-parquetecnologico'
       - '--image'
-      - 'southamerica-east1-docker.pkg.dev/parquetec/cloud-run-source-deploy/smcti-website'
+      - 'southamerica-east1-docker.pkg.dev/parquetec/cloud-run-source-deploy/patrimonio-parquetecnologico'
       - '--region'
       - 'us-central1'
       - '--allow-unauthenticated'
@@ -104,7 +104,7 @@ availableSecrets:
       env: 'CRON_SECRET'
 
 images:
-  - 'southamerica-east1-docker.pkg.dev/parquetec/cloud-run-source-deploy/smcti-website'
+  - 'southamerica-east1-docker.pkg.dev/parquetec/cloud-run-source-deploy/patrimonio-parquetecnologico'
 
 options:
   default_logs_bucket_behavior: REGIONAL_USER_OWNED_BUCKET

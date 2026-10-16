@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       name:     name?.trim() || undefined,
       email:    email.toLowerCase(),
       password: hashed,
-      role:     "viewer", // todo novo cadastro começa como viewer
+      role:     "aprovacao", // todo novo cadastro começa como viewer
     });
 
     return NextResponse.json({ ok: true }, { status: 201 });

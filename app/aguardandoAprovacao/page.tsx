@@ -74,7 +74,7 @@ export default function AguardandoAprovacaoPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-0.5 flex-shrink-0">3.</span>
-              Caso o processo demore, entre em contato com o administrador diretamente.
+              Caso o processo demore, entre em contato com o administrador diretamente pelo email contato@patobranco.tec.br.
             </li>
           </ul>
         </div>

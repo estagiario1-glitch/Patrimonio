@@ -22,7 +22,7 @@ const nextConfig = {
         headers: [
           {
             key: "Access-Control-Allow-Origin",
-            value: process.env.NEXTAUTH_URL || "https://patobranco.tec.br",
+            value: process.env.NEXTAUTH_URL || "https://patrimonio.cloud.run",
           },
           {
             key: "Access-Control-Allow-Methods",
@@ -37,30 +37,6 @@ const nextConfig = {
             value: "true",
           },
         ],
-      },
-    ];
-  },
-  async redirects() {
-    return [
-      {
-        source: "/cursos",
-        destination: "/patotech",
-        permanent: true,
-      },
-      {
-        source: "/patotec",
-        destination: "/patotech",
-        permanent: true,
-      },
-      {
-        source: "/cursos/:curso",
-        destination: "/patotech/:curso",
-        permanent: true,
-      },
-      {
-        source: "/patotec/:curso",
-        destination: "/patotech/:curso",
-        permanent: true,
       },
     ];
   },
